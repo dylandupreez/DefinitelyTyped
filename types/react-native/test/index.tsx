@@ -18,6 +18,8 @@ import {
     AppStateIOS,
     BackAndroid,
     Button,
+    DataSourceAssetCallback,
+    DeviceEventEmitterStatic,
     Dimensions,
     InteractionManager,
     ListView,
@@ -31,13 +33,32 @@ import {
     ViewStyle,
     ViewPagerAndroid,
     FlatList,
+    FlatListProperties,
     SectionList,
+    SectionListProperties,
     findNodeHandle,
     ScrollView,
     ScrollViewProps,
     RefreshControl,
     TabBarIOS,
+    NativeModules,
+    MaskedView,
 } from 'react-native';
+
+declare module 'react-native' {
+    interface NativeTypedModule {
+        someFunction(): void;
+        someProperty: string;
+    }
+    interface NativeModulesStatic {
+        NativeTypedModule: NativeTypedModule
+    }
+}
+
+NativeModules.NativeUntypedModule;
+
+NativeModules.NativeTypedModule.someFunction();
+NativeModules.NativeTypedModule.someProperty = "";
 
 function testDimensions() {
   const {
@@ -133,11 +154,11 @@ class Welcome extends React.Component {
 
         const { rootView, customView } = this.refs;
 
-        let nativeComponentHandle = findNodeHandle(rootView);
+        const nativeComponentHandle = findNodeHandle(rootView);
 
-        let customComponentHandle = findNodeHandle(customView);
+        const customComponentHandle = findNodeHandle(customView);
 
-        let fromHandle = findNodeHandle(customComponentHandle);
+        const fromHandle = findNodeHandle(customComponentHandle);
 
     }
 
@@ -205,29 +226,46 @@ InteractionManager.runAfterInteractions(() => {
     // ...
 }).then(() => 'done')
 
-export class FlatListTest {
+export class FlatListTest extends React.Component<FlatListProperties<number>, {}> {
+    _renderItem = (rowData: any) => {
+        return (
+            <View>
+                <Text> {rowData.item} </Text>
+            </View>
+        );
+      }
+
+    _renderSeparator= () => <View style={{height: 1, width: '100%', backgroundColor: 'gray'}} />
+
     render() {
-        <FlatList
-            data={[1, 2, 3, 4, 5]}
-            renderItem={(itemInfo: number) => <View><Text>{itemInfo}</Text></View>}
-        />
+        return (
+            <FlatList
+                data={[1, 2, 3, 4, 5]}
+                renderItem={this._renderItem}
+                ItemSeparatorComponent={this._renderSeparator}
+            />
+        );
     }
 }
 
-export class SectionListTest {
+export class SectionListTest extends React.Component<SectionListProperties<string>, {}> {
     render() {
-        var sections = [{
-            key: 's1',
-            data: ['A', 'B', 'C', 'D', 'E']
+        const sections = [{
+            title: 'Section 1',
+            data: ['A', 'B', 'C', 'D', 'E'],
         }, {
-            key: 's2',
-            data: ['A2', 'B2', 'C2', 'D2', 'E2']
+            title: 'Section 2',
+            data: ['A2', 'B2', 'C2', 'D2', 'E2'],
+            renderItem: (info: { item: string }) => <View><Text>{info.item}</Text></View>
         }];
 
-        <SectionList
-            sections={sections}
-            renderItem={(info: {item: string, index: number}) => <View><Text>{info.item}</Text></View>}
-        />
+        return (
+            <SectionList
+                sections={sections}
+                renderSectionHeader={({section}) => <View><Text>{section.title}</Text></View>}
+                renderItem={(info: { item: string }) => <View><Text>{info.item}</Text></View>}
+            />
+        );
     }
 }
 
@@ -261,7 +299,7 @@ class ScrollerListComponentTest extends React.Component<{}, { dataSource: ListVi
 
                     return <ScrollView {...props} style={[scrollViewStyle1.scrollView, scrollViewStyle2]}/>
                 }}
-                renderRow={({ type, data }, _, row: number) => {
+                renderRow={({ type, data }, _, row) => {
                     return <Text>Filler</Text>
                 }
             } />
@@ -319,3 +357,32 @@ class AlertTest extends React.Component {
         );
     }
 }
+
+class MaskedViewTest extends React.Component {
+    render() {
+        return (
+            <MaskedView
+                maskElement={
+                    <View />
+                }
+            >
+                <View />
+            </MaskedView>
+        )
+    }
+}
+
+// DataSourceAssetCallback
+const dataSourceAssetCallback1: DataSourceAssetCallback = {
+    rowHasChanged: (r1, r2) => true,
+    sectionHeaderHasChanged: (h1, h2) => true,
+    getRowData: (dataBlob, sectionID, rowID) => (sectionID as number) + (rowID as number),
+    getSectionHeaderData: (dataBlob, sectionID) => sectionID as string,
+}
+
+const dataSourceAssetCallback2: DataSourceAssetCallback = {}
+
+// DeviceEventEmitterStatic
+const deviceEventEmitterStatic: DeviceEventEmitterStatic = null;
+deviceEventEmitterStatic.addListener('keyboardWillShow', (data) => true);
+deviceEventEmitterStatic.addListener('keyboardWillShow', (data) => true, {});
